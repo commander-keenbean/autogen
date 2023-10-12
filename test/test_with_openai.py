@@ -48,7 +48,7 @@ def test_function_call_groupchat():
     )
     coder = autogen.AssistantAgent(
         name="Player",
-        system_message="You will can function `get_random_number` to get a random number. Stop only when you get at least 1 even number and 1 odd number. Reply TERMINATE to stop.",
+        system_message="You will call function `get_random_number` to get a random number. Stop only when you get at least 1 even number and 1 odd number. Reply TERMINATE to stop.",
         llm_config=llm_config,
     )
     groupchat = autogen.GroupChat(agents=[user_proxy, coder], messages=[], max_round=7)
