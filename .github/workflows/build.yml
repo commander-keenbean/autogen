@@ -42,10 +42,6 @@ jobs:
           python -c "import autogen"
           pip install -e. pytest mock
           pip uninstall -y openai
-      - name: Install unstructured if not windows
-        if: matrix.os != 'windows-2019'
-        run: |
-          pip install "unstructured[all-docs]"
       - name: Test with pytest
         if: matrix.python-version != '3.10'
         run: |
@@ -53,7 +49,7 @@ jobs:
       - name: Coverage
         if: matrix.python-version == '3.10'
         run: |
-          pip install -e .[mathchat,test]
+          pip install -e .[test]
           pip uninstall -y openai
           coverage run -a -m pytest test --ignore=test/agentchat/contrib
           coverage xml
