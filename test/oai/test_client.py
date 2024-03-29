@@ -1,3 +1,5 @@
+#!/usr/bin/env python3 -m pytest
+
 import shutil
 import time
 import pytest
@@ -138,12 +140,6 @@ def test_usage_summary():
     # check print
     client.print_usage_summary()
 
-    # check update
-    client._update_usage_summary(response, use_cache=True)
-    assert (
-        client.total_usage_summary["total_cost"] == response.cost * 2
-    ), "total_cost should be equal to response.cost * 2"
-
     # check clear
     client.clear_usage_summary()
     assert client.actual_usage_summary is None, "actual_usage_summary should be None"
@@ -152,7 +148,15 @@ def test_usage_summary():
     # actual usage and all usage should be different
     response = client.create(prompt="1+3=", model=model, cache_seed=42)
     assert client.total_usage_summary["total_cost"] > 0, "total_cost should be greater than 0"
+    client.clear_usage_summary()
+    response = client.create(prompt="1+3=", model=model, cache_seed=42)
     assert client.actual_usage_summary is None, "No actual cost should be recorded"
+
+    # check update
+    response = client.create(prompt="1+3=", model=model, cache_seed=42)
+    assert (
+        client.total_usage_summary["total_cost"] == response.cost * 2
+    ), "total_cost should be equal to response.cost * 2"
 
 
 @pytest.mark.skipif(skip, reason="openai>=1 not installed")
@@ -163,6 +167,9 @@ def test_legacy_cache():
         filter_dict={"model": ["gpt-3.5-turbo", "gpt-35-turbo"]},
     )
 
+    # Prompt to use for testing.
+    prompt = "Write a 100 word summary on the topic of the history of human civilization."
+
     # Clear cache.
     if os.path.exists(LEGACY_CACHE_DIR):
         shutil.rmtree(LEGACY_CACHE_DIR)
@@ -170,12 +177,12 @@ def test_legacy_cache():
     # Test default cache seed.
     client = OpenAIWrapper(config_list=config_list)
     start_time = time.time()
-    cold_cache_response = client.create(messages=[{"role": "user", "content": "random()"}])
+    cold_cache_response = client.create(messages=[{"role": "user", "content": prompt}])
     end_time = time.time()
     duration_with_cold_cache = end_time - start_time
 
     start_time = time.time()
-    warm_cache_response = client.create(messages=[{"role": "user", "content": "random()"}])
+    warm_cache_response = client.create(messages=[{"role": "user", "content": prompt}])
     end_time = time.time()
     duration_with_warm_cache = end_time - start_time
     assert cold_cache_response == warm_cache_response
@@ -185,12 +192,12 @@ def test_legacy_cache():
     # Test with cache seed set through constructor
     client = OpenAIWrapper(config_list=config_list, cache_seed=13)
     start_time = time.time()
-    cold_cache_response = client.create(messages=[{"role": "user", "content": "random()"}])
+    cold_cache_response = client.create(messages=[{"role": "user", "content": prompt}])
     end_time = time.time()
     duration_with_cold_cache = end_time - start_time
 
     start_time = time.time()
-    warm_cache_response = client.create(messages=[{"role": "user", "content": "random()"}])
+    warm_cache_response = client.create(messages=[{"role": "user", "content": prompt}])
     end_time = time.time()
     duration_with_warm_cache = end_time - start_time
     assert cold_cache_response == warm_cache_response
@@ -200,12 +207,12 @@ def test_legacy_cache():
     # Test with cache seed set through create method
     client = OpenAIWrapper(config_list=config_list)
     start_time = time.time()
-    cold_cache_response = client.create(messages=[{"role": "user", "content": "random()"}], cache_seed=17)
+    cold_cache_response = client.create(messages=[{"role": "user", "content": prompt}], cache_seed=17)
     end_time = time.time()
     duration_with_cold_cache = end_time - start_time
 
     start_time = time.time()
-    warm_cache_response = client.create(messages=[{"role": "user", "content": "random()"}], cache_seed=17)
+    warm_cache_response = client.create(messages=[{"role": "user", "content": prompt}], cache_seed=17)
     end_time = time.time()
     duration_with_warm_cache = end_time - start_time
     assert cold_cache_response == warm_cache_response
@@ -214,7 +221,7 @@ def test_legacy_cache():
 
     # Test using a different cache seed through create method.
     start_time = time.time()
-    cold_cache_response = client.create(messages=[{"role": "user", "content": "random()"}], cache_seed=21)
+    cold_cache_response = client.create(messages=[{"role": "user", "content": prompt}], cache_seed=21)
     end_time = time.time()
     duration_with_cold_cache = end_time - start_time
     assert duration_with_warm_cache < duration_with_cold_cache
@@ -229,6 +236,9 @@ def test_cache():
         filter_dict={"model": ["gpt-3.5-turbo", "gpt-35-turbo"]},
     )
 
+    # Prompt to use for testing.
+    prompt = "Write a 100 word summary on the topic of the history of artificial intelligence."
+
     # Clear cache.
     if os.path.exists(LEGACY_CACHE_DIR):
         shutil.rmtree(LEGACY_CACHE_DIR)
@@ -241,12 +251,12 @@ def test_cache():
     with Cache.disk(cache_seed=49, cache_path_root=cache_dir) as cache:
         client = OpenAIWrapper(config_list=config_list, cache=cache)
         start_time = time.time()
-        cold_cache_response = client.create(messages=[{"role": "user", "content": "random()"}])
+        cold_cache_response = client.create(messages=[{"role": "user", "content": prompt}])
         end_time = time.time()
         duration_with_cold_cache = end_time - start_time
 
         start_time = time.time()
-        warm_cache_response = client.create(messages=[{"role": "user", "content": "random()"}])
+        warm_cache_response = client.create(messages=[{"role": "user", "content": prompt}])
         end_time = time.time()
         duration_with_warm_cache = end_time - start_time
         assert cold_cache_response == warm_cache_response
@@ -260,12 +270,12 @@ def test_cache():
     client = OpenAIWrapper(config_list=config_list)
     with Cache.disk(cache_seed=312, cache_path_root=cache_dir) as cache:
         start_time = time.time()
-        cold_cache_response = client.create(messages=[{"role": "user", "content": "random()"}], cache=cache)
+        cold_cache_response = client.create(messages=[{"role": "user", "content": prompt}], cache=cache)
         end_time = time.time()
         duration_with_cold_cache = end_time - start_time
 
         start_time = time.time()
-        warm_cache_response = client.create(messages=[{"role": "user", "content": "random()"}], cache=cache)
+        warm_cache_response = client.create(messages=[{"role": "user", "content": prompt}], cache=cache)
         end_time = time.time()
         duration_with_warm_cache = end_time - start_time
         assert cold_cache_response == warm_cache_response
@@ -278,7 +288,7 @@ def test_cache():
     # Test different cache seed.
     with Cache.disk(cache_seed=123, cache_path_root=cache_dir) as cache:
         start_time = time.time()
-        cold_cache_response = client.create(messages=[{"role": "user", "content": "random()"}], cache=cache)
+        cold_cache_response = client.create(messages=[{"role": "user", "content": prompt}], cache=cache)
         end_time = time.time()
         duration_with_cold_cache = end_time - start_time
         assert duration_with_warm_cache < duration_with_cold_cache
